@@ -1,0 +1,2 @@
+<?php
+return ['domain'=>NULL,'plural-forms'=>NULL,'messages'=>['Pin some comments'=>'Épingler des commentaires','Pinned'=>'Epinglé','Yes'=>'Oui','No'=>'Non','Pinned comments'=>'Commentaires épinglés','Pinned comment'=>'Commentaire épinglé','Pin this comment'=>'Épingler ce commentaire'],'language'=>'fr_FR','x-generator'=>'Poedit 3.4.4'];
