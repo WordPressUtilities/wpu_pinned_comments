@@ -4,7 +4,7 @@ Plugin Name: WPU Pinned Comments
 Plugin URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Update URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Description: Pin some comments
-Version: 0.1.0
+Version: 0.2.0
 Author: Darklg
 Author URI: https://darklg.me
 Text Domain: wpu_pinned_comments
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 class WPU_Pinned_Comments {
-    private $plugin_version = '0.1.0';
+    private $plugin_version = '0.2.0';
     private $plugin_settings = array(
         'id' => 'wpu_pinned_comments',
         'name' => 'WPU Pinned Comments'
@@ -63,7 +63,7 @@ class WPU_Pinned_Comments {
     -------------------------- */
 
     public function add_pinned_column($columns) {
-        $columns['wpu_pinned_comment'] = __('Pinned', 'wpu_pinned_comment');
+        $columns['wpu_pinned_comment'] = __('Pinned', 'wpu_pinned_comments');
         return $columns;
     }
 
@@ -73,32 +73,51 @@ class WPU_Pinned_Comments {
             if (!$is_pinned) {
                 return;
             }
-            echo ($is_pinned) ? __('Yes', 'wpu_pinned_comment') : __('No', 'wpu_pinned_comment');
+            echo ($is_pinned) ? __('Yes', 'wpu_pinned_comments') : __('No', 'wpu_pinned_comments');
         }
     }
 
     public function sort_comments_by_pinned($wp_comment_query) {
-        if (!is_admin()) {
-            return;
+        if (is_admin()) {
+            /* Display only pinned comments */
+            if (!isset($_GET['wpu_pinned_comment'])) {
+                return;
+            }
+            /* Avoid recursive call */
+            if (!$this->flag_apply_filters) {
+                $this->flag_apply_filters = true;
+                $wp_comment_query->query_vars['comment__in'] = $this->get_pinned_comments(0, true);
+                $this->flag_apply_filters = false;
+            }
         }
-        if (!isset($_GET['wpu_pinned_comment'])) {
-            return;
+        else {
+            /* Display pinned comments above comments */
+            $wp_comment_query->query_vars['orderby'] = 'meta_value_num comment_date';
+            $wp_comment_query->query_vars['meta_query'] = array(
+                'relation' => 'OR',
+                array(
+                    'key' => 'wpu_pinned_comment',
+                    'compare' => 'NOT EXISTS'
+                ),
+                array(
+                    'key' => 'wpu_pinned_comment',
+                    'value' => 1
+                )
+            );
         }
-        /* Avoid recursive call */
-        if (!$this->flag_apply_filters) {
-            $this->flag_apply_filters = true;
-            $wp_comment_query->query_vars['comment__in'] = $this->get_pinned_comments(0, true);
-            $this->flag_apply_filters = false;
-        }
+
     }
 
     /* Quick links */
     public function add_pinned_comments_quick_link($links = array()) {
         $count = count($this->get_pinned_comments(0, true));
         $url = admin_url('edit-comments.php?wpu_pinned_comment=1');
-        $label = __('Pinned comments', 'wpu_pinned_comment');
-        $html = isset($_GET['wpu_pinned_comment']) ? '<strong>' . $label . '</strong>' : '<a href="' . $url . '">' . __('Pinned comments', 'wpu_pinned_comment') . '</a>';
-        $links['wpu_pinned_comment'] = $html . ' (' . $count . ')';
+        $label = __('Pinned comments', 'wpu_pinned_comments');
+        $current_attribute = isset($_GET['wpu_pinned_comment']) ? ' class="current"' : '';
+        $links['wpu_pinned_comment'] = '<a ' . $current_attribute . ' href="' . $url . '">' . $label . '</a> <span class="count">(' . $count . ')</span>';
+        if (isset($links['all'])) {
+            $links['all'] = str_replace('class="current"', '', $links['all']);
+        }
         return $links;
     }
 
@@ -108,7 +127,7 @@ class WPU_Pinned_Comments {
     public function add_comment_meta_box() {
         add_meta_box(
             'wpu_pinned_comment',
-            __('Pinned comment', 'wpu_pinned_comment'),
+            __('Pinned comment', 'wpu_pinned_comments'),
             array(&$this, 'display_comment_meta_box'),
             'comment',
             'normal',
@@ -121,7 +140,7 @@ class WPU_Pinned_Comments {
         echo '<label for="wpu_pinned_comment_box">';
         echo '<input type="checkbox" name="wpu_pinned_comment" id="wpu_pinned_comment_box" value="1" ' . checked($is_pinned, 1, false) . ' />';
         echo '<input type="hidden" name="wpu_pinned_comment_nonce" value="' . wp_create_nonce('wpu_pinned_comment') . '" />';
-        echo __('Pin this comment', 'wpu_pinned_comment');
+        echo __('Pin this comment', 'wpu_pinned_comments');
         echo '</label>';
     }
 
