@@ -4,7 +4,7 @@ Plugin Name: WPU Pinned Comments
 Plugin URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Update URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Description: Pin some comments
-Version: 0.2.0
+Version: 0.2.1
 Author: Darklg
 Author URI: https://darklg.me
 Text Domain: wpu_pinned_comments
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 class WPU_Pinned_Comments {
-    private $plugin_version = '0.2.0';
+    private $plugin_version = '0.2.1';
     private $plugin_settings = array(
         'id' => 'wpu_pinned_comments',
         'name' => 'WPU Pinned Comments'
@@ -39,7 +39,7 @@ class WPU_Pinned_Comments {
         /* Admin list */
         add_filter('manage_edit-comments_columns', array(&$this, 'add_pinned_column'));
         add_action('manage_comments_custom_column', array(&$this, 'display_pinned_column'), 10, 2);
-        add_filter('manage_edit-comments_sortable_columns', array(&$this, 'add_pinned_column'));
+        add_filter('manage_edit-comments_sortable_columns', array(&$this, 'add_pinned_column_sortable'));
         add_action('pre_get_comments', array(&$this, 'sort_comments_by_pinned'));
 
         /* Add quick link displaying only pinned comments */
@@ -53,6 +53,7 @@ class WPU_Pinned_Comments {
             load_muplugin_textdomain('wpu_pinned_comments', dirname(plugin_basename(__FILE__)) . '/lang/');
         }
         $this->plugin_description = __('Pin some comments', 'wpu_pinned_comments');
+
     }
 
     /* ----------------------------------------------------------
@@ -67,45 +68,50 @@ class WPU_Pinned_Comments {
         return $columns;
     }
 
+    public function add_pinned_column_sortable($columns) {
+        $columns['wpu_pinned_comment'] = 'wpu_pinned_comment';
+        return $columns;
+    }
+
     public function display_pinned_column($column, $comment_id) {
         if ($column == 'wpu_pinned_comment') {
-            $is_pinned = $this->is_pinned($comment_id);
-            if (!$is_pinned) {
-                return;
-            }
-            echo ($is_pinned) ? __('Yes', 'wpu_pinned_comments') : __('No', 'wpu_pinned_comments');
+            echo $this->is_pinned($comment_id) ? '<span class="dashicons dashicons-star-filled" title="' . __('Pinned', 'wpu_pinned_comments') . '"></span>' : '';
         }
     }
 
     public function sort_comments_by_pinned($wp_comment_query) {
         if (is_admin()) {
             /* Display only pinned comments */
-            if (!isset($_GET['wpu_pinned_comment'])) {
-                return;
+            if (isset($_GET['wpu_pinned_comment'])) {
+                /* Avoid recursive call */
+                if (!$this->flag_apply_filters) {
+                    $this->flag_apply_filters = true;
+                    $wp_comment_query->query_vars['comment__in'] = $this->get_pinned_comments(0, true);
+                    $this->flag_apply_filters = false;
+                }
             }
-            /* Avoid recursive call */
-            if (!$this->flag_apply_filters) {
-                $this->flag_apply_filters = true;
-                $wp_comment_query->query_vars['comment__in'] = $this->get_pinned_comments(0, true);
-                $this->flag_apply_filters = false;
+            if(isset($_GET['orderby']) && $_GET['orderby'] == 'wpu_pinned_comment') {
+                $this->set_order_comments_pinned($wp_comment_query);
             }
-        }
-        else {
+        } else {
             /* Display pinned comments above comments */
-            $wp_comment_query->query_vars['orderby'] = 'meta_value_num comment_date';
-            $wp_comment_query->query_vars['meta_query'] = array(
-                'relation' => 'OR',
-                array(
-                    'key' => 'wpu_pinned_comment',
-                    'compare' => 'NOT EXISTS'
-                ),
-                array(
-                    'key' => 'wpu_pinned_comment',
-                    'value' => 1
-                )
-            );
+            $this->set_order_comments_pinned($wp_comment_query);
         }
+    }
 
+    public function set_order_comments_pinned($wp_comment_query) {
+        $wp_comment_query->query_vars['orderby'] = 'meta_value_num comment_date';
+        $wp_comment_query->query_vars['meta_query'] = array(
+            'relation' => 'OR',
+            array(
+                'key' => 'wpu_pinned_comment',
+                'compare' => 'NOT EXISTS'
+            ),
+            array(
+                'key' => 'wpu_pinned_comment',
+                'value' => 1
+            )
+        );
     }
 
     /* Quick links */
