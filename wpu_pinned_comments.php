@@ -4,7 +4,7 @@ Plugin Name: WPU Pinned Comments
 Plugin URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Update URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Description: Pin some comments
-Version: 0.2.1
+Version: 0.2.2
 Author: Darklg
 Author URI: https://darklg.me
 Text Domain: wpu_pinned_comments
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 class WPU_Pinned_Comments {
-    private $plugin_version = '0.2.1';
+    private $plugin_version = '0.2.2';
     private $plugin_settings = array(
         'id' => 'wpu_pinned_comments',
         'name' => 'WPU Pinned Comments'
@@ -86,11 +86,11 @@ class WPU_Pinned_Comments {
                 /* Avoid recursive call */
                 if (!$this->flag_apply_filters) {
                     $this->flag_apply_filters = true;
-                    $wp_comment_query->query_vars['comment__in'] = $this->get_pinned_comments(0, true);
+                    $wp_comment_query->query_vars['comment__in'] = $this->get_pinned_comments(0, array('ids' => true));
                     $this->flag_apply_filters = false;
                 }
             }
-            if(isset($_GET['orderby']) && $_GET['orderby'] == 'wpu_pinned_comment') {
+            if (isset($_GET['orderby']) && $_GET['orderby'] == 'wpu_pinned_comment') {
                 $this->set_order_comments_pinned($wp_comment_query);
             }
         } else {
@@ -116,7 +116,7 @@ class WPU_Pinned_Comments {
 
     /* Quick links */
     public function add_pinned_comments_quick_link($links = array()) {
-        $count = count($this->get_pinned_comments(0, true));
+        $count = $this->get_pinned_comments(0, array('count' => true));
         $url = admin_url('edit-comments.php?wpu_pinned_comment=1');
         $label = __('Pinned comments', 'wpu_pinned_comments');
         $current_attribute = isset($_GET['wpu_pinned_comment']) ? ' class="current"' : '';
@@ -178,18 +178,30 @@ class WPU_Pinned_Comments {
         return delete_comment_meta($comment_id, 'wpu_pinned_comment');
     }
 
-    public function get_pinned_comments($post_id, $ids = false) {
-        $args = array(
+    public function get_pinned_comments($post_id, $args = array()) {
+        $defaults = array(
+            'count' => false,
+            'ids' => false
+        );
+        if (!is_array($args)) {
+            $args = array();
+        }
+        $args = array_merge($defaults, $args);
+        $q = array(
             'post_id' => $post_id,
             'meta_key' => 'wpu_pinned_comment',
-            'meta_value' => 1,
-            'number' => -1
+            'meta_value' => 1
         );
-        if ($ids) {
-            $args['fields'] = 'ids';
+        if (!$post_id) {
+            unset($q['post_id']);
         }
-
-        return get_comments($args);
+        if ($args['ids']) {
+            $q['fields'] = 'ids';
+        }
+        if ($args['count']) {
+            $q['count'] = true;
+        }
+        return get_comments($q);
     }
 }
 
