@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: WPU Pinned Comments\n"
-"POT-Creation-Date: 2024-08-12 16:02+0200\n"
+"POT-Creation-Date: 2024-08-18 22:11+0200\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -25,30 +25,40 @@ msgstr ""
 "X-Poedit-SearchPathExcluded-8: inc/WPUBaseToolbox\n"
 "X-Poedit-SearchPathExcluded-9: inc/WPUBaseUpdate\n"
 
-#: .././wpu_pinned_comments.php:54
+#: .././wpu_pinned_comments.php:61
 msgid "Pin some comments"
 msgstr "Épingler des commentaires"
 
-#: .././wpu_pinned_comments.php:65
+#: .././wpu_pinned_comments.php:87
+msgid "Not pinned"
+msgstr "Non épinglé"
+
+#: .././wpu_pinned_comments.php:89 .././wpu_pinned_comments.php:96
 msgid "Pinned"
 msgstr "Epinglé"
 
-#: .././wpu_pinned_comments.php:75
-msgid "Yes"
-msgstr "Oui"
+#: .././wpu_pinned_comments.php:120
+msgid "Invalid request"
+msgstr "Requête invalide"
 
-#: .././wpu_pinned_comments.php:75
-msgid "No"
-msgstr "Non"
+#: .././wpu_pinned_comments.php:127
+msgid "You do not have permission to edit this comment"
+msgstr "Vous n’avez pas l’autorisation de modifier ce commentaire"
 
-#: .././wpu_pinned_comments.php:98 .././wpu_pinned_comments.php:99
+#: .././wpu_pinned_comments.php:185
 msgid "Pinned comments"
 msgstr "Commentaires épinglés"
 
-#: .././wpu_pinned_comments.php:110
+#: .././wpu_pinned_comments.php:200
 msgid "Pinned comment"
 msgstr "Commentaire épinglé"
 
-#: .././wpu_pinned_comments.php:123
+#: .././wpu_pinned_comments.php:213
 msgid "Pin this comment"
 msgstr "Épingler ce commentaire"
+
+#~ msgid "Yes"
+#~ msgstr "Oui"
+
+#~ msgid "No"
+#~ msgstr "Non"

@@ -4,7 +4,7 @@ Plugin Name: WPU Pinned Comments
 Plugin URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Update URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Description: Pin some comments
-Version: 0.2.2
+Version: 0.3.0
 Author: Darklg
 Author URI: https://darklg.me
 Text Domain: wpu_pinned_comments
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 class WPU_Pinned_Comments {
-    private $plugin_version = '0.2.2';
+    private $plugin_version = '0.3.0';
     private $plugin_settings = array(
         'id' => 'wpu_pinned_comments',
         'name' => 'WPU Pinned Comments'
@@ -45,6 +45,12 @@ class WPU_Pinned_Comments {
         /* Add quick link displaying only pinned comments */
         add_filter('views_edit-comments', array(&$this, 'add_pinned_comments_quick_link'));
 
+        /* Admin JS */
+        add_action('admin_enqueue_scripts', array(&$this, 'enqueue_admin_scripts'));
+
+        /* Ajax */
+        add_action('wp_ajax_wpu_pinned_comments_toggle_status', array(&$this, 'toggle_comment_status'));
+
     }
 
     public function plugins_loaded() {
@@ -60,6 +66,27 @@ class WPU_Pinned_Comments {
       Admin
     ---------------------------------------------------------- */
 
+    public function enqueue_admin_scripts() {
+        if (!function_exists('get_current_screen')) {
+            return;
+        }
+        $current_screen = get_current_screen();
+        if (!in_array($current_screen->id, array('edit-comments'))) {
+            return;
+        }
+        wp_enqueue_script('wpu-pinned-comments-admin', plugin_dir_url(__FILE__) . 'assets/admin.js', array('jquery'), $this->plugin_version, true);
+        wp_localize_script('wpu-pinned-comments-admin', 'wpu_pinned_comments_admin', array(
+            'ajax_url' => admin_url('admin-ajax.php')
+        ));
+    }
+
+    public function get_pinned_icon($pinned = true) {
+        if (!$pinned) {
+            return '<span class="dashicons dashicons-star-empty" title="' . __('Not pinned', 'wpu_pinned_comments') . '"></span>';
+        }
+        return '<span class="dashicons dashicons-star-filled" title="' . __('Pinned', 'wpu_pinned_comments') . '"></span>';
+    }
+
     /* Filter in comments list
     -------------------------- */
 
@@ -74,9 +101,44 @@ class WPU_Pinned_Comments {
     }
 
     public function display_pinned_column($column, $comment_id) {
-        if ($column == 'wpu_pinned_comment') {
-            echo $this->is_pinned($comment_id) ? '<span class="dashicons dashicons-star-filled" title="' . __('Pinned', 'wpu_pinned_comments') . '"></span>' : '';
+        if ($column != 'wpu_pinned_comment') {
+            return;
         }
+        $pinned = $this->is_pinned($comment_id);
+        $icon_result = $this->get_pinned_icon($pinned);
+        if (current_user_can('edit_comment', $comment_id)) {
+            echo '<a href="#" data class="wpu-pin-comment" data-status="' . ($pinned ? '1' : '0') . '" data-comment-id="' . $comment_id . '">' . $icon_result . '</a>';
+        } else {
+            echo $icon_result;
+        }
+    }
+
+    public function toggle_comment_status() {
+        if (!isset($_POST['comment_id']) || !isset($_POST['status'])) {
+            wp_send_json_error(__('Invalid request', 'wpu_pinned_comments'));
+        }
+
+        $comment_id = intval($_POST['comment_id']);
+        $is_pinned = intval($_POST['status']);
+
+        if (!current_user_can('edit_comment', $comment_id)) {
+            wp_send_json_error(__('You do not have permission to edit this comment', 'wpu_pinned_comments'));
+        }
+
+        if ($is_pinned) {
+            $this->unpin_comment($comment_id);
+            wp_send_json_success(array(
+                'icon_html' => $this->get_pinned_icon(false),
+                'status' => 0
+            ));
+        } else {
+            $this->pin_comment($comment_id);
+            wp_send_json_success(array(
+                'icon_html' => $this->get_pinned_icon(true),
+                'status' => 1
+            ));
+        }
+
     }
 
     public function sort_comments_by_pinned($wp_comment_query) {
@@ -154,7 +216,9 @@ class WPU_Pinned_Comments {
         if (!isset($_POST['wpu_pinned_comment_nonce']) || !wp_verify_nonce($_POST['wpu_pinned_comment_nonce'], 'wpu_pinned_comment')) {
             return;
         }
-
+        if (!current_user_can('edit_comment', $comment_id)) {
+            return;
+        }
         if (isset($_POST['wpu_pinned_comment']) && $_POST['wpu_pinned_comment'] == 1) {
             $this->pin_comment($comment_id);
         } else {
