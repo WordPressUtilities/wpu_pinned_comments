@@ -4,7 +4,7 @@ Plugin Name: WPU Pinned Comments
 Plugin URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Update URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Description: Pin some comments
-Version: 0.3.0
+Version: 0.4.0
 Author: Darklg
 Author URI: https://darklg.me
 Text Domain: wpu_pinned_comments
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 class WPU_Pinned_Comments {
-    private $plugin_version = '0.3.0';
+    private $plugin_version = '0.4.0';
     private $plugin_settings = array(
         'id' => 'wpu_pinned_comments',
         'name' => 'WPU Pinned Comments'
@@ -45,6 +45,9 @@ class WPU_Pinned_Comments {
         /* Add quick link displaying only pinned comments */
         add_filter('views_edit-comments', array(&$this, 'add_pinned_comments_quick_link'));
 
+        /* Add a pin link to .row-actions */
+        add_filter('comment_row_actions', array(&$this, 'add_pinned_comment_row_actions'), 10, 2);
+
         /* Admin JS */
         add_action('admin_enqueue_scripts', array(&$this, 'enqueue_admin_scripts'));
 
@@ -67,13 +70,6 @@ class WPU_Pinned_Comments {
     ---------------------------------------------------------- */
 
     public function enqueue_admin_scripts() {
-        if (!function_exists('get_current_screen')) {
-            return;
-        }
-        $current_screen = get_current_screen();
-        if (!in_array($current_screen->id, array('edit-comments'))) {
-            return;
-        }
         wp_enqueue_script('wpu-pinned-comments-admin', plugin_dir_url(__FILE__) . 'assets/admin.js', array('jquery'), $this->plugin_version, true);
         wp_localize_script('wpu-pinned-comments-admin', 'wpu_pinned_comments_admin', array(
             'ajax_url' => admin_url('admin-ajax.php')
@@ -187,6 +183,17 @@ class WPU_Pinned_Comments {
             $links['all'] = str_replace('class="current"', '', $links['all']);
         }
         return $links;
+    }
+
+    public function add_pinned_comment_row_actions($actions, $comment) {
+        if (!current_user_can('edit_comment', $comment->comment_ID)) {
+            return $actions;
+        }
+        $pinned = $this->is_pinned($comment->comment_ID);
+        $label = $this->get_pinned_icon($pinned);
+
+        $actions['wpu_pinned_comment'] = '<a href="#"  class="wpu-pin-comment" data-status="' . ($pinned ? '1' : '0') . '" data-comment-id="' . $comment->comment_ID . '">' . $label . '</a>';
+        return $actions;
     }
 
     /* Admin field
