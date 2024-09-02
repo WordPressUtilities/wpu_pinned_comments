@@ -4,7 +4,7 @@ Plugin Name: WPU Pinned Comments
 Plugin URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Update URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Description: Pin some comments
-Version: 0.4.0
+Version: 0.4.1
 Author: Darklg
 Author URI: https://darklg.me
 Text Domain: wpu_pinned_comments
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 class WPU_Pinned_Comments {
-    private $plugin_version = '0.4.0';
+    private $plugin_version = '0.4.1';
     private $plugin_settings = array(
         'id' => 'wpu_pinned_comments',
         'name' => 'WPU Pinned Comments'
@@ -242,10 +242,12 @@ class WPU_Pinned_Comments {
     }
 
     public function pin_comment($comment_id) {
+        do_action('wpu_pinned_comments__pin_comment', $comment_id);
         return update_comment_meta($comment_id, 'wpu_pinned_comment', 1);
     }
 
     public function unpin_comment($comment_id) {
+        do_action('wpu_pinned_comments__unpin_comment', $comment_id);
         return delete_comment_meta($comment_id, 'wpu_pinned_comment');
     }
 
