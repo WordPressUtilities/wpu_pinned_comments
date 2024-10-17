@@ -4,7 +4,7 @@ Plugin Name: WPU Pinned Comments
 Plugin URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Update URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Description: Pin some comments
-Version: 0.4.1
+Version: 0.4.2
 Author: Darklg
 Author URI: https://darklg.me
 Text Domain: wpu_pinned_comments
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 class WPU_Pinned_Comments {
-    private $plugin_version = '0.4.1';
+    private $plugin_version = '0.4.2';
     private $plugin_settings = array(
         'id' => 'wpu_pinned_comments',
         'name' => 'WPU Pinned Comments'
@@ -41,6 +41,7 @@ class WPU_Pinned_Comments {
         add_action('manage_comments_custom_column', array(&$this, 'display_pinned_column'), 10, 2);
         add_filter('manage_edit-comments_sortable_columns', array(&$this, 'add_pinned_column_sortable'));
         add_action('pre_get_comments', array(&$this, 'sort_comments_by_pinned'));
+        add_action('comments_list_table_query_args', array(&$this, 'comments_list_table_query_args'));
 
         /* Add quick link displaying only pinned comments */
         add_filter('views_edit-comments', array(&$this, 'add_pinned_comments_quick_link'));
@@ -135,6 +136,14 @@ class WPU_Pinned_Comments {
             ));
         }
 
+    }
+
+    public function comments_list_table_query_args($args) {
+        if (is_admin() && isset($_GET['wpu_pinned_comment']) && $_GET['wpu_pinned_comment'] == 1) {
+            $args['meta_key'] = 'wpu_pinned_comment';
+            $args['meta_value'] = 1;
+        }
+        return $args;
     }
 
     public function sort_comments_by_pinned($wp_comment_query) {
