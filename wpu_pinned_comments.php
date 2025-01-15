@@ -4,7 +4,7 @@ Plugin Name: WPU Pinned Comments
 Plugin URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Update URI: https://github.com/WordPressUtilities/wpu_pinned_comments
 Description: Pin some comments
-Version: 0.4.2
+Version: 0.4.3
 Author: Darklg
 Author URI: https://darklg.me
 Text Domain: wpu_pinned_comments
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 class WPU_Pinned_Comments {
-    private $plugin_version = '0.4.2';
+    private $plugin_version = '0.4.3';
     private $plugin_settings = array(
         'id' => 'wpu_pinned_comments',
         'name' => 'WPU Pinned Comments'
@@ -30,7 +30,7 @@ class WPU_Pinned_Comments {
     private $flag_apply_filters = false;
 
     public function __construct() {
-        add_action('plugins_loaded', array(&$this, 'plugins_loaded'));
+        add_action('init', array(&$this, 'load_translation'));
 
         /* Admin field */
         add_action('add_meta_boxes_comment', array(&$this, 'add_comment_meta_box'));
@@ -57,10 +57,13 @@ class WPU_Pinned_Comments {
 
     }
 
-    public function plugins_loaded() {
+    public function load_translation() {
         # TRANSLATION
-        if (!load_plugin_textdomain('wpu_pinned_comments', false, dirname(plugin_basename(__FILE__)) . '/lang/')) {
-            load_muplugin_textdomain('wpu_pinned_comments', dirname(plugin_basename(__FILE__)) . '/lang/');
+        $lang_dir = dirname(plugin_basename(__FILE__)) . '/lang/';
+        if (strpos(__DIR__, 'mu-plugins') !== false) {
+            load_muplugin_textdomain('wpu_pinned_comments', $lang_dir);
+        } else {
+            load_plugin_textdomain('wpu_pinned_comments', false, $lang_dir);
         }
         $this->plugin_description = __('Pin some comments', 'wpu_pinned_comments');
 
